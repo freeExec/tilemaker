@@ -540,11 +540,18 @@ int main(int argc, char* argv[]) {
 							if (!osmObject.empty()) {
 								WayID relID = osmObject.osmID;
 								// Store the relation members in the global relation store
-								relations.insert_front(relID, outerWayVec, innerWayVec);
+								//relations.insert_front(relID, outerWayVec, innerWayVec);
+                                if (osmObject.multiPolygonInited) {
+                                    relations.insert_back(relID, osmObject.multiPolygonRelationCache);
+                                }
+                                else {
+                                    relations.insert_back(relID,
+                                        osmStore.correctMultiPolygonRelation(outerWayVec, innerWayVec));
+                                }
 
 								// for each tile the relation may cover, put the output objects.
 								unordered_set<uint32_t> tileSet;
-								MultiPolygon mp = osmStore.wayListMultiPolygon(outerWayVec, innerWayVec);
+								MultiPolygon mp = osmStore.wayListMultiPolygon(osmStore.correctMultiPolygonRelation(outerWayVec, innerWayVec));
 								if (mp.size() == 1) {
 									insertIntermediateTiles(mp[0].outer(), baseZoom, tileSet);
 									fillCoveredTiles(tileSet);
@@ -713,12 +720,9 @@ int main(int argc, char* argv[]) {
 										cerr << "Exception when writing output object " << jt->objectID << " of type " << jt->geomType << endl;
 										if (relations.count(jt->objectID)) {
 											const auto &wayList = relations.at(jt->objectID);
-											for (auto et = wayList.outerBegin; et != wayList.outerEnd; ++et) {
-												if (ways.count(*et)==0) { cerr << " - couldn't find constituent way " << *et << endl; }
-											}
-											for (auto et = wayList.innerBegin; et != wayList.innerEnd; ++et) {
-												if (ways.count(*et)==0) { cerr << " - couldn't find constituent way " << *et << endl; }
-											}
+                                            for (auto et = wayList.begin; et != wayList.end; ++et) {
+                                                if (ways.count(*et) == 0) { cerr << " - couldn't find constituent way " << *et << endl; }
+                                            }
 										}
 									}
 								}
