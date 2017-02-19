@@ -468,10 +468,23 @@ int main(int argc, char* argv[]) {
 						nodeId = 0;
 						NodeVec nodeVec;
                         nodeVec.reserve(pbfWay.refs_size());
+                        int flagSkipp = 0;
 						for (k=0; k<pbfWay.refs_size(); k++) {
 							nodeId += pbfWay.refs(k);
-							nodeVec.push_back(static_cast<NodeID>(nodeId));
+                            if (osmStore.nodes.count(nodeId) == 1) {
+                                nodeVec.push_back(static_cast<NodeID>(nodeId));
+                            }
+                            else if (verbose) {
+                                if (flagSkipp == 0) {
+                                    cout << "Skip bad ref from WayID: " << wayId << " (";
+                                }
+                                if (flagSkipp < 6) {
+                                    cout << nodeId << ",";
+                                }
+                                flagSkipp++;
+                            }
 						}
+                        if (flagSkipp > 0) cout << ")" << endl;
 
 						osmObject.setWay(&pbfWay, &nodeVec);
 						luaState["way_function"](&osmObject);
